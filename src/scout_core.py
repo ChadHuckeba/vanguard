@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
+from persistence_interface import JSONPersistence
 
 class ScoutCore:
     """
@@ -28,7 +29,6 @@ class ScoutCore:
         """
         self.root_dir = Path(__file__).parent.parent
         self.state_path = self.root_dir / "data" / "state.json"
-        self.bak_path = self.root_dir / "data" / "state.json.bak"
         self.log_path = self.root_dir / "logs" / "system.log"
         
         (self.root_dir / "data").mkdir(exist_ok=True)
@@ -40,7 +40,13 @@ class ScoutCore:
             format='%(asctime)s - %(levelname)s - %(message)s'
         )
         
-        if not self.state_path.exists():
+        # Initialize persistence layer (Alpha: JSON)
+        self.persistence = JSONPersistence(self.state_path)
+        
+        # Load state through the persistence interface
+        self.state = self.persistence.load_state()
+        
+        if self.state is None:
             self.state = {
                 "state_metadata": {
                     "version": "1.0",
@@ -50,9 +56,6 @@ class ScoutCore:
                 "entities": {}
             }
             self._persist_state()
-        else:
-            with open(self.state_path, 'r') as f:
-                self.state = json.load(f)
 
     def _sanitize_url(self, raw_url: str) -> str:
         """
@@ -73,17 +76,11 @@ class ScoutCore:
 
     def _persist_state(self):
         """
-        Atomic Write Protocol: Protects the global state from corruption 
-        by utilizing a backup-before-write routine.
+        Delegates state persistence to the registered interface.
+        Follows the Hub-and-Spoke DAO pattern defined in the SDD.
         """
-        try:
-            if self.state_path.exists():
-                os.replace(self.state_path, self.bak_path)
-            
-            with open(self.state_path, 'w') as f:
-                json.dump(self.state, f, indent=4)
-        except Exception as e:
-            logging.error(f"Persistence Failure: {str(e)}")
+        self.state["state_metadata"]["last_updated"] = datetime.utcnow().isoformat() + "Z"
+        self.persistence.save_state(self.state)
 
     def upsert_record(self, record_data: dict):
         """
