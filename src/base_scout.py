@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import logging
 from datetime import datetime
-from core.scout_core import core_engine
+from scout_core import core_engine
 
 class BaseScout(ABC):
     """
