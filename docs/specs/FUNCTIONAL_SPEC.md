@@ -20,7 +20,7 @@ Vanguard is a modular, agentic system composed of a central orchestration engine
 * **Data Acquisition**: Utilize the JobSpy adapter for aggregator retrieval.
 * **Lead Integrity**: Apply Multi-Vector Data Validation (MVDV) to identify "Ghost Jobs".
 * **Semantic Alignment**: Perform match analysis against the user’s career profile.
-* **Standardized Output**: Adhere strictly to the VAN_Scout_JSON_Contract.
+* **Standardized Output**: Adhere strictly to the VAN_CONTRACT_DISCOVERY.
 
 ## 5. STATE TRANSITION & LIFECYCLE
 * **Mandatory States**: New, Reviewed, Applied, Rejected, Expired, and Failed.
