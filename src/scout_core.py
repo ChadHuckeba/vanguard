@@ -15,12 +15,17 @@ class ScoutCore:
     entity deduplication, and data integrity for all specialized scouts.
     """
     _instance = None
+    _initialized = False
 
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super(ScoutCore, cls).__new__(cls)
-            cls._instance._initialize_core()
         return cls._instance
+
+    def __init__(self):
+        if not self._initialized:
+            self._initialize_core()
+            self.__class__._initialized = True
 
     def _initialize_core(self):
         """
