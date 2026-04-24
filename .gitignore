@@ -1,6 +1,8 @@
 # --- Environments ---
-.venv/
+.venv
 .env
+research.md
+
 
 # --- Python Artifacts ---
 __pycache__/
