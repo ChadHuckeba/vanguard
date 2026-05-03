@@ -14,6 +14,7 @@
 | :--- | :--- | :--- | :--- |
 | **VAN_GLOSSARY** | Layer 1 (Global) | `/docs/GLOSSARY.md` | Standardized terminology and logic definitions. |
 | **VAN_CHARTER** | Layer 1 (Global) | `/docs/specs/PROJECT_CHARTER.md` | Executive vision, scope gates, and zero-cost mandates. |
+| **VAN_PAEP** | Layer 2 (Project) | `/docs/PAEP.md` | Project-specific personas, heuristics, and bylaws. |
 | **VAN_INDEX** | Layer 2 (Project) | `/docs/PROJECT_INDEX.md` | This manual; master directory and authority map. |
 | **VAN_FSD** | Layer 2 (Tactical) | `/docs/specs/FUNCTIONAL_SPEC.md` | Functional requirements and lead lifecycle logic. |
 | **VAN_SDD** | Layer 2 (Tactical) | `/docs/specs/TECHNICAL_DESIGN.md` | System architecture, flow diagrams, and security protocols. |
