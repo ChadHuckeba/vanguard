@@ -17,17 +17,30 @@
     
     <nav class="border-b border-slate-800 bg-[#0f172a]/80 sticky top-0 z-50 backdrop-blur-md">
         <div class="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-shield-halved text-white text-sm"></i>
+            <div class="flex items-center gap-8">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-shield-halved text-white text-sm"></i>
+                    </div>
+                    <span class="text-xl font-bold tracking-tight">VANGUARD <span class="text-blue-500 font-medium">LENS</span></span>
                 </div>
-                <span class="text-xl font-bold tracking-tight">VANGUARD <span class="text-blue-500 font-medium">LENS</span></span>
+                
+                <!-- Top-level Filters -->
+                <div class="flex items-center gap-4 border-l border-slate-800 pl-8">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Scout</span>
+                        <select id="provider-filter" onchange="filterLeads()" class="bg-slate-900 border border-slate-700 rounded-md px-3 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all min-w-[150px]">
+                            <option value="all">All Providers</option>
+                        </select>
+                    </div>
+                </div>
             </div>
+
             <div class="flex items-center gap-6">
                 <div id="stats" class="text-sm text-slate-400 flex gap-4">
                     <span>Total Leads: <span id="total-count" class="text-white font-mono">0</span></span>
                 </div>
-                <button onclick="fetchLeads()" class="p-2 hover:bg-slate-800 rounded-lg transition-colors">
+                <button onclick="fetchLeads()" class="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white">
                     <i class="fas fa-sync-alt"></i>
                 </button>
             </div>
@@ -36,30 +49,6 @@
 
     <main class="max-w-[1600px] mx-auto p-6 flex gap-6 h-[calc(100vh-64px)] overflow-hidden">
         
-        <!-- Sidebar / Filters -->
-        <aside class="w-64 flex-shrink-0 flex flex-col gap-6">
-            <div class="space-y-4">
-                <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Filter by Scout</h3>
-                <select id="provider-filter" onchange="filterLeads()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-                    <option value="all">All Providers</option>
-                </select>
-            </div>
-            
-            <div class="space-y-4">
-                <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Relo Probability</h3>
-                <input type="range" id="relo-filter" min="0" max="100" value="0" oninput="filterLeads()" class="w-full accent-blue-500">
-                <div class="flex justify-between text-[10px] text-slate-500">
-                    <span>0%</span>
-                    <span>50%</span>
-                    <span>100%</span>
-                </div>
-            </div>
-
-            <div class="mt-auto p-4 bg-slate-900/50 rounded-xl border border-slate-800 text-xs text-slate-400">
-                <p><i class="fas fa-info-circle mr-2"></i> Click a row to inspect the raw JSON payload and metadata.</p>
-            </div>
-        </aside>
-
         <!-- Main Content (Table) -->
         <section class="flex-grow flex flex-col gap-4 overflow-hidden">
             <div class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden flex flex-col flex-grow">
@@ -117,6 +106,7 @@
         function populateFilters() {
             const providers = [...new Set(allLeads.map(l => l.source_info?.scout || "unknown"))];
             const select = document.getElementById('provider-filter');
+            const currentVal = select.value;
             select.innerHTML = '<option value="all">All Providers</option>';
             providers.forEach(p => {
                 const opt = document.createElement('option');
@@ -124,6 +114,7 @@
                 opt.textContent = p;
                 select.appendChild(opt);
             });
+            select.value = currentVal || 'all';
         }
 
         function updateStats() {
@@ -132,12 +123,10 @@
 
         function filterLeads() {
             const provider = document.getElementById('provider-filter').value;
-            const minRelo = document.getElementById('relo-filter').value / 100;
 
             filteredLeads = allLeads.filter(l => {
                 const matchesProvider = provider === 'all' || (l.source_info?.scout === provider);
-                const matchesRelo = (l.content?.vanguard_relo_probability || 0) >= minRelo;
-                return matchesProvider && matchesRelo;
+                return matchesProvider;
             });
 
             renderTable();
