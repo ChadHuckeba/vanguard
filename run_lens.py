@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 def main():
     parser = argparse.ArgumentParser(description="Vanguard Lens Dashboard Runner")
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind the server to")
-    parser.add_argument("--port", type=int, default=8001, help="Port to bind the server to")
+    parser.add_argument("--port", type=int, default=8001, help="Port to bind the server to (Standard: 8001)")
     parser.add_argument("--reload", action="store_true", help="Enable auto-reload")
     
     args = parser.parse_args()

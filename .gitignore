@@ -40,6 +40,7 @@ data/
 # --- Runtime Logs ---
 logs/
 !logs/.gitkeep
+*.log
 
 # --- Testing Artifacts ---
 .pytest_cache/

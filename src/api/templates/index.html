@@ -105,7 +105,8 @@
         }
 
         function populateFilters() {
-            const providers = [...new Set(allLeads.map(l => l.source_info?.scout || "unknown"))];
+            const providers = [...new Set(allLeads.map(l => l.source_info?.scout || "unknown"))]
+                                .filter(p => p !== "unknown");
             const select = document.getElementById('provider-filter');
             const currentVal = select.value;
             select.innerHTML = '<option value="all">All Providers</option>';
