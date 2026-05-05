@@ -62,18 +62,25 @@ class CareerPageParser:
             logger.error(f"Failed to fetch {self.target_url}: {str(e)}")
             return None
 
-    def extract_job_urls(self) -> List[str]:
+    def extract_job_urls(self) -> Dict:
         """
         Orchestrates the extraction process: ATS detection followed by heuristic fallback.
+        Returns a dictionary with status and metadata.
         """
         html = self.fetch_html()
         if not html:
-            return []
+            return {
+                "urls": [],
+                "status": "failed",
+                "method": None,
+                "error": "Failed to fetch HTML or empty response"
+            }
 
         soup = BeautifulSoup(html, "html.parser")
         links = soup.find_all("a", href=True)
         
         discovered_urls = set()
+        method = None
 
         # Phase A: ATS Signature Detection
         for link in links:
@@ -83,6 +90,7 @@ class CareerPageParser:
                     abs_url = self._sanitize_url(href)
                     if abs_url:
                         discovered_urls.add(abs_url)
+                        method = "ats_signature"
                         logger.debug(f"Detected ATS ({ats}) link: {abs_url}")
 
         # Phase B: Heuristic Fallback (if few ATS links found or for mixed sites)
@@ -94,9 +102,23 @@ class CareerPageParser:
                         abs_url = self._sanitize_url(href)
                         if abs_url:
                             discovered_urls.add(abs_url)
+                            if not method:
+                                method = "heuristic"
                             logger.debug(f"Heuristic match: {abs_url}")
 
-        return sorted(list(discovered_urls))
+        status = "verified" if len(discovered_urls) == 1 else "ambiguous" if len(discovered_urls) > 1 else "failed"
+        error = None
+        if status == "failed":
+            error = "No URLs matched ATS signatures or heuristic patterns"
+        elif status == "ambiguous":
+            error = f"Found {len(discovered_urls)} potential job URLs"
+
+        return {
+            "urls": sorted(list(discovered_urls)),
+            "status": status,
+            "method": method,
+            "error": error
+        }
 
     def _sanitize_url(self, href: str) -> Optional[str]:
         """

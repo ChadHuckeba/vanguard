@@ -44,6 +44,22 @@ hit_count
 INTEGER
 DEFAULT 1
 Cumulative count of times this entry has been discovered.
+career_url
+TEXT
+NULL
+Extracted direct job posting URL.
+career_discovery_method
+TEXT
+NULL
+Discovery vector: ats_signature, heuristic, or manual.
+career_extraction_status
+TEXT
+DEFAULT 'pending'
+State: verified, ambiguous, failed, pending.
+career_error_log
+TEXT
+NULL
+Reason for extraction failure or ambiguity.
 status
 TEXT
 DEFAULT 'active'
@@ -93,6 +109,10 @@ CREATE TABLE IF NOT EXISTS entries (
     first_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
     hit_count INTEGER DEFAULT 1,
+    career_url TEXT,
+    career_discovery_method TEXT,
+    career_extraction_status TEXT DEFAULT 'pending',
+    career_error_log TEXT,
     status TEXT DEFAULT 'active'
 );
 

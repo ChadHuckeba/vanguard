@@ -13,8 +13,19 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 def test_parser(url: str):
     print(f"\n--- Testing: {url} ---")
     parser = CareerPageParser(url)
-    urls = parser.extract_job_urls()
+    result = parser.extract_job_urls()
     
+    status = result["status"]
+    urls = result["urls"]
+    method = result["method"]
+    error = result["error"]
+    
+    print(f"Status: {status.upper()}")
+    if method:
+        print(f"Method: {method}")
+    if error:
+        print(f"Error/Info: {error}")
+        
     if urls:
         print(f"Found {len(urls)} job URLs:")
         for u in urls[:10]:  # Show first 10

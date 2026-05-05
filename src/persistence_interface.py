@@ -158,15 +158,29 @@ class SQLitePersistence(PersistenceInterface):
                     first_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
                     last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
                     hit_count INTEGER DEFAULT 1,
+                    career_url TEXT,
+                    career_discovery_method TEXT,
+                    career_extraction_status TEXT DEFAULT 'pending',
+                    career_error_log TEXT,
                     status TEXT DEFAULT 'active'
                 );
             """)
             
-            # Migration: Add work_model if it doesn't exist
+            # Migration: Add missing columns
             cursor = conn.execute("PRAGMA table_info(entries)")
             columns = [info[1] for info in cursor.fetchall()]
-            if 'work_model' not in columns:
-                conn.execute("ALTER TABLE entries ADD COLUMN work_model TEXT DEFAULT 'unknown';")
+            
+            migration_columns = {
+                'work_model': "TEXT DEFAULT 'unknown'",
+                'career_url': "TEXT",
+                'career_discovery_method': "TEXT",
+                'career_extraction_status': "TEXT DEFAULT 'pending'",
+                'career_error_log': "TEXT"
+            }
+            
+            for col, definition in migration_columns.items():
+                if col not in columns:
+                    conn.execute(f"ALTER TABLE entries ADD COLUMN {col} {definition};")
 
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS enrichment (
@@ -208,6 +222,12 @@ class SQLitePersistence(PersistenceInterface):
             },
             "content": entry_data,
             "work_model": res.get("work_model", "unknown"),
+            "career_info": {
+                "url": res.get("career_url"),
+                "method": res.get("career_discovery_method"),
+                "status": res.get("career_extraction_status"),
+                "error": res.get("career_error_log")
+            },
             "metadata": {
                 "first_seen": res["first_seen"],
                 "last_seen": res["last_seen"],
@@ -274,6 +294,12 @@ class SQLitePersistence(PersistenceInterface):
         incoming_first_seen = entry_object.get("metadata", {}).get("first_seen")
         incoming_last_seen = entry_object.get("metadata", {}).get("last_seen")
 
+        career_info = entry_object.get("career_info", {})
+        career_url = career_info.get("url")
+        career_method = career_info.get("method")
+        career_status = career_info.get("status") or "pending"
+        career_error = career_info.get("error")
+
         with self._get_connection() as conn:
             row = conn.execute("SELECT hit_count FROM entries WHERE vanguard_id = ?", (v_id,)).fetchone()
             if row:
@@ -283,17 +309,26 @@ class SQLitePersistence(PersistenceInterface):
                         hit_count = hit_count + 1,
                         status = 'active',
                         entry_data = ?,
-                        work_model = ?
+                        work_model = ?,
+                        career_url = COALESCE(?, career_url),
+                        career_discovery_method = COALESCE(?, career_discovery_method),
+                        career_extraction_status = CASE WHEN ? != 'pending' THEN ? ELSE career_extraction_status END,
+                        career_error_log = COALESCE(?, career_error_log)
                     WHERE vanguard_id = ?
-                """, (entry_data, work_model, v_id))
+                """, (entry_data, work_model, career_url, career_method, career_status, career_status, career_error, v_id))
             else:
                 first_seen = incoming_first_seen if incoming_first_seen else datetime.utcnow().isoformat() + "Z"
                 last_seen = incoming_last_seen if incoming_last_seen else datetime.utcnow().isoformat() + "Z"
                 
                 conn.execute("""
-                    INSERT INTO entries (vanguard_id, provider_id, identity_manifest, entry_data, work_model, first_seen, last_seen, hit_count, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')
-                """, (v_id, provider_id, identity_manifest, entry_data, work_model, first_seen, last_seen, incoming_hit_count))
+                    INSERT INTO entries (
+                        vanguard_id, provider_id, identity_manifest, entry_data, 
+                        work_model, first_seen, last_seen, hit_count, 
+                        career_url, career_discovery_method, career_extraction_status, career_error_log,
+                        status
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
+                """, (v_id, provider_id, identity_manifest, entry_data, work_model, first_seen, last_seen, incoming_hit_count, career_url, career_method, career_status, career_error))
             return True
 
     def query_entries(self, filter_criteria: dict = None) -> list:
