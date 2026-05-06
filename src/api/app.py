@@ -3,10 +3,16 @@ import os
 from pathlib import Path
 from typing import List, Dict, Any
 
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request, status
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+import logging
+import time
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger("vanguard.api")
 
 # Add project root to sys.path to import src modules
 ROOT_DIR = Path(__file__).parent.parent.parent
@@ -19,6 +25,18 @@ app = FastAPI(title="Vanguard Lens Dashboard")
 # Setup templates
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+@app.get("/health")
+async def health_check():
+    """Service health check endpoint."""
+    return JSONResponse(
+        content={
+            "status": "healthy",
+            "timestamp": time.time(),
+            "version": "0.1.0-alpha.1"
+        },
+        status_code=status.HTTP_200_OK
+    )
 
 @app.get("/", response_class=HTMLResponse)
 async def get_dashboard(request: Request):
