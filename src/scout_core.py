@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
+from vanguard.models.lead import Lead
 from persistence_interface import SQLitePersistence, JSONPersistence
 
 class ScoutCore:
@@ -94,8 +95,17 @@ class ScoutCore:
     def upsert_record(self, record_data: dict):
         """
         Ingest an entity record or update an existing entry.
-        Tracks global hit counts and temporal metadata for the record.
+        Validated against the Pydantic Lead model at the boundary.
         """
-        self.persistence.upsert_entry(record_data)
+        try:
+            # 1. Validation at the Edge
+            lead = Lead(**record_data)
+            
+            # 2. Handoff to persistence (using validated model)
+            self.persistence.upsert_entry(lead.model_dump())
+            
+        except Exception as e:
+            logging.error(f"Ingestion failed for lead: {str(e)}")
+            raise ValueError(f"Payload validation failed: {str(e)}")
 
 core_engine = ScoutCore()
