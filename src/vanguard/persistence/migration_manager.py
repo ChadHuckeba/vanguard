@@ -4,6 +4,7 @@ from .engine import SQLiteEngine
 
 logger = logging.getLogger("vanguard.persistence.migrations")
 
+
 class MigrationManager:
     """
     Manages database schema transitions using SQL migration scripts.
@@ -27,15 +28,15 @@ class MigrationManager:
     def apply_all(self) -> None:
         """Executes all pending migration scripts in alphabetical order."""
         migration_files = sorted(self.migrations_dir.glob("*.sql"))
-        
+
         with self.engine.get_connection() as conn:
             applied = [row[0] for row in conn.execute("SELECT migration_name FROM _migrations").fetchall()]
-            
+
             for m_file in migration_files:
                 if m_file.name not in applied:
                     logger.info(f"Applying migration: {m_file.name}")
                     try:
-                        with open(m_file, 'r') as f:
+                        with open(m_file, "r") as f:
                             sql = f.read()
                             conn.executescript(sql)
                             conn.execute("INSERT INTO _migrations (migration_name) VALUES (?)", (m_file.name,))

@@ -24,22 +24,21 @@ app = FastAPI(title="Vanguard Lens Dashboard")
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
+
 @app.get("/health")
 async def health_check() -> JSONResponse:
     """Service health check endpoint."""
     return JSONResponse(
-        content={
-            "status": "healthy",
-            "timestamp": time.time(),
-            "version": "0.1.0-alpha.1"
-        },
-        status_code=status.HTTP_200_OK
+        content={"status": "healthy", "timestamp": time.time(), "version": "0.1.0-alpha.1"},
+        status_code=status.HTTP_200_OK,
     )
+
 
 @app.get("/", response_class=HTMLResponse)
 async def get_dashboard(request: Request) -> Any:
     """Serves the main dashboard UI."""
     return templates.TemplateResponse(request=request, name="index.html")
+
 
 @app.get("/api/leads")
 async def get_leads() -> Any:
@@ -50,15 +49,13 @@ async def get_leads() -> Any:
     except Exception as e:
         return {"error": str(e)}
 
+
 @app.get("/api/stats")
 async def get_stats() -> Any:
     """Returns basic stats about the ingested leads."""
     try:
         leads = core_engine.leads.list_leads()
-        stats: Dict[str, Any] = {
-            "total_leads": len(leads),
-            "providers": {}
-        }
+        stats: Dict[str, Any] = {"total_leads": len(leads), "providers": {}}
         for lead in leads:
             provider = lead.source_info.scout
             stats["providers"][provider] = stats["providers"].get(provider, 0) + 1

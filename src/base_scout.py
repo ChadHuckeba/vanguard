@@ -4,11 +4,12 @@ from typing import Any
 from scout_core import core_engine
 from vanguard.models.lead import Lead, SourceInfo, LeadContent
 
+
 class BaseScout(ABC):
     """
     Abstract Base Class for all Vanguard specialized agents (Spokes).
 
-    Provides the standardized interface for data ingestion and 
+    Provides the standardized interface for data ingestion and
     communication with the ScoutCore (Hub).
     """
 
@@ -38,20 +39,14 @@ class BaseScout(ABC):
             work_model (str): The work modality (onsite, hybrid, remote, unknown).
         """
         # Generate the unique Vanguard ID using the Hub's logic
-        vanguard_id = core_engine.generate_vanguard_id(
-            source_url=self.target_source, 
-            entity_label=entity_label
-        )
+        vanguard_id = core_engine.generate_vanguard_id(source_url=self.target_source, entity_label=entity_label)
 
         # Prepare the standardized record using Pydantic models at the boundary
         lead = Lead(
             vanguard_id=vanguard_id,
-            source_info=SourceInfo(
-                scout=self.scout_name,
-                source_url=self.target_source
-            ),
+            source_info=SourceInfo(scout=self.scout_name, source_url=self.target_source),
             work_model=work_model,
-            content=LeadContent(**raw_data)
+            content=LeadContent(**raw_data),
         )
 
         self.logger.info(f"Reporting entity: {entity_label} ({vanguard_id[:8]})")

@@ -5,6 +5,7 @@ from .base_dao import BaseDAO
 
 logger = logging.getLogger("vanguard.persistence.companies")
 
+
 class CompaniesDAO(BaseDAO):
     """
     Data Access Object for managing company registry metadata.
@@ -27,9 +28,10 @@ class CompaniesDAO(BaseDAO):
         domain = data["root_domain"]
         career = data["career_url"]
         ats = data["ats_provider"]
-        
+
         with self.engine.get_connection() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO companies (company_name, root_domain, career_url, ats_provider, last_updated)
                 VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
                 ON CONFLICT(company_name) DO UPDATE SET
@@ -37,6 +39,8 @@ class CompaniesDAO(BaseDAO):
                     career_url = COALESCE(?, career_url),
                     ats_provider = COALESCE(?, ats_provider),
                     last_updated = CURRENT_TIMESTAMP
-            """, (name, domain, career, ats, domain, career, ats))
+            """,
+                (name, domain, career, ats, domain, career, ats),
+            )
             conn.commit()
             return True

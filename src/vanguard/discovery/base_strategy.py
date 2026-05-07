@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from vanguard.models.discovery import DiscoveryResult
 
+
 class BaseDiscoveryStrategy(ABC):
     """
     Abstract base class for all discovery strategies.

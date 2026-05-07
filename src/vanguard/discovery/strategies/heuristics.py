@@ -27,7 +27,42 @@ class HeuristicStrategy(BaseDiscoveryStrategy):
     }
 
     PORTAL_KEYWORDS = ["jobs", "openings", "opportunities", "positions", "portal", "search"]
-    REJECT_KEYWORDS = ["diversity", "inclusion", "benefits", "culture", "life at", "values", "belonging"]
+
+    # Aggressive rejection for corporate/informational pages that are NOT job boards
+    REJECT_KEYWORDS = [
+        "diversity",
+        "inclusion",
+        "benefits",
+        "culture",
+        "life at",
+        "values",
+        "belonging",
+        "contact",
+        "support",
+        "privacy",
+        "terms",
+        "about-us",
+        "press",
+        "investors",
+        "mission",
+    ]
+
+    # Blocklist to prevent resolving company names to job aggregators/boards
+    GLOBAL_AGGREGATOR_BLOCKLIST = [
+        "indeed.com",
+        "linkedin.com",
+        "glassdoor.com",
+        "ziprecruiter.com",
+        "simplyhired.com",
+        "careerbuilder.com",
+        "jooble.org",
+        "lensa.com",
+        "swooped.co",
+        "monster.com",
+        "dice.com",
+        "salary.com",
+        "levels.fyi",
+    ]
 
     def __init__(self) -> None:
         self.ddgs = DDGS()
@@ -49,18 +84,27 @@ class HeuristicStrategy(BaseDiscoveryStrategy):
                 url = res.get("href")
                 if not url:
                     continue
-                domain = str(urlparse(url).netloc).lower()
-                if domain.startswith("www."):
-                    domain = domain[4:]
+
+                domain_parts = urlparse(url).netloc.lower().split(".")
+                domain = ".".join(domain_parts[-2:]) if len(domain_parts) >= 2 else domain_parts[0]
+
+                # Check Blocklist
+                if any(block in url.lower() for block in self.GLOBAL_AGGREGATOR_BLOCKLIST):
+                    logger.warning(f"Skipping blocked aggregator domain: {domain}")
+                    continue
+
+                full_domain = str(urlparse(url).netloc).lower()
+                clean_domain = full_domain[4:] if full_domain.startswith("www.") else full_domain
 
                 # Simple check: name in domain
                 clean_name = re.sub(r"[^a-z0-9]", "", company_name.lower())
-                clean_domain = re.sub(r"[^a-z0-9]", "", domain.split(".")[0])
+                name_in_domain = re.sub(r"[^a-z0-9]", "", clean_domain.split(".")[0])
 
-                if clean_name in clean_domain or clean_domain in clean_name:
-                    return domain
+                if clean_name in name_in_domain or name_in_domain in clean_name:
+                    return clean_domain
             return None
-        except Exception:
+        except Exception as e:
+            logger.error(f"Domain resolution failed for {company_name}: {e}")
             return None
 
     def discover_portal(self, company_name: str, base_domain: Optional[str] = None) -> Optional[DiscoveryResult]:
@@ -78,12 +122,19 @@ class HeuristicStrategy(BaseDiscoveryStrategy):
                 if response.status_code == 200:
                     soup = BeautifulSoup(response.text, "html.parser")
                     title = str(soup.title.string).lower() if (soup.title and soup.title.string) else ""
+                    body_text = soup.get_text().lower()[:2000]  # Check first 2k chars
 
                     score = path_weight
                     if any(kw in title for kw in self.PORTAL_KEYWORDS):
                         score += 0.3
+
+                    # Penalty for non-career keywords (Increased weight)
                     if any(kw in title for kw in self.REJECT_KEYWORDS):
-                        score -= 0.7
+                        score -= 1.2
+
+                    # Reward for finding 'search' or 'apply' in body
+                    if "apply now" in body_text or "search jobs" in body_text:
+                        score += 0.2
 
                     candidates.append((score, response.url))
             except Exception:
@@ -92,7 +143,7 @@ class HeuristicStrategy(BaseDiscoveryStrategy):
         if candidates:
             candidates.sort(key=lambda x: x[0], reverse=True)
             best_score, best_url = candidates[0]
-            if best_score >= 0.5:
+            if best_score >= 0.6:  # Increased threshold for verification
                 return DiscoveryResult(
                     portal_url=str(best_url),
                     status="verified" if best_score >= 1.0 else "ambiguous",
@@ -114,8 +165,9 @@ class HeuristicStrategy(BaseDiscoveryStrategy):
             for link in links:
                 text = link.get_text(strip=True).lower()
                 if clean_title in re.sub(r"[^a-z0-9]", "", text):
-                    href = link["href"]
-                    return urljoin(portal_url, str(href))
+                    href = link.get("href")
+                    if href:
+                        return urljoin(portal_url, str(href))
             return None
         except Exception:
             return None
