@@ -12,7 +12,7 @@ class LeadsDAO(BaseDAO):
     Data Access Object for managing job leads (entries).
     """
 
-    def _map_row_to_lead(self, row) -> Lead:
+    def _map_row_to_lead(self, row: sqlite3.Row) -> Lead:
         """Translates a database row into a Pydantic Lead model."""
         res = dict(row)
         raw_data = json.loads(res["entry_data"])
