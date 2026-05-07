@@ -6,6 +6,7 @@ from .strategies.heuristics import HeuristicStrategy
 
 logger = logging.getLogger("vanguard.discovery.orchestrator")
 
+
 class DiscoveryOrchestrator:
     """
     The entry point for all discovery tasks.
@@ -15,9 +16,7 @@ class DiscoveryOrchestrator:
     def __init__(self, companies_dao: CompaniesDAO):
         self.companies = companies_dao
         # Strategy list in order of precedence
-        self.strategies = [
-            HeuristicStrategy()
-        ]
+        self.strategies = [HeuristicStrategy()]
 
     def resolve_company_portal(self, company_name: str, force_refresh: bool = False) -> Optional[Company]:
         """
@@ -32,12 +31,12 @@ class DiscoveryOrchestrator:
         for strategy in self.strategies:
             logger.info(f"Attempting discovery for '{company_name}' using strategy: {strategy.name}")
             result = strategy.discover_portal(company_name)
-            
+
             if result and result.portal_url:
                 company_obj = Company(
                     company_name=company_name,
                     career_url=result.portal_url,
-                    ats_provider=result.method if result.method != "heuristic" else None
+                    ats_provider=result.method if result.method != "heuristic" else None,
                 )
                 self.companies.upsert_company(company_obj)
                 return company_obj

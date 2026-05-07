@@ -1,6 +1,7 @@
 from typing import Optional
 from pydantic import BaseModel
 
+
 class DiscoveryResult(BaseModel):
     portal_url: Optional[str] = None
     deep_link: Optional[str] = None

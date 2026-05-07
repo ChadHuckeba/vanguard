@@ -7,6 +7,7 @@ from .base_dao import BaseDAO
 
 logger = logging.getLogger("vanguard.persistence.leads")
 
+
 class LeadsDAO(BaseDAO):
     """
     Data Access Object for managing job leads (entries).
@@ -30,7 +31,7 @@ class LeadsDAO(BaseDAO):
             vanguard_id=res["vanguard_id"],
             source_info=SourceInfo(
                 scout=res["provider_id"],
-                source_url=content_data.get("source_url") or content_data.get("source") or "unknown"
+                source_url=content_data.get("source_url") or content_data.get("source") or "unknown",
             ),
             content=LeadContent(**content_data),
             work_model=res.get("work_model", "unknown"),
@@ -38,16 +39,11 @@ class LeadsDAO(BaseDAO):
                 url=res.get("career_url"),
                 method=res.get("career_discovery_method"),
                 status=res.get("career_extraction_status"),
-                error=res.get("career_error_log")
+                error=res.get("career_error_log"),
             ),
-            metadata=Metadata(
-                first_seen=res["first_seen"],
-                last_seen=res["last_seen"],
-                hit_count=res["hit_count"]
-            ),
-            status=res["status"]
+            metadata=Metadata(first_seen=res["first_seen"], last_seen=res["last_seen"], hit_count=res["hit_count"]),
+            status=res["status"],
         )
-
 
     def get_lead(self, vanguard_id: str) -> Optional[Lead]:
         """Retrieves a single lead by its unique fingerprint."""
@@ -70,7 +66,7 @@ class LeadsDAO(BaseDAO):
         provider_id = data["source_info"]["scout"]
         entry_data = json.dumps(data["content"])
         work_model = data["work_model"]
-        
+
         career = data["career_info"]
         career_url = career["url"]
         career_method = career["method"]
@@ -81,7 +77,8 @@ class LeadsDAO(BaseDAO):
             # Check for existing
             row = conn.execute("SELECT hit_count FROM entries WHERE vanguard_id = ?", (v_id,)).fetchone()
             if row:
-                conn.execute("""
+                conn.execute(
+                    """
                     UPDATE entries SET
                         last_seen = CURRENT_TIMESTAMP,
                         hit_count = hit_count + 1,
@@ -93,9 +90,21 @@ class LeadsDAO(BaseDAO):
                         career_extraction_status = CASE WHEN ? != 'pending' THEN ? ELSE career_extraction_status END,
                         career_error_log = COALESCE(?, career_error_log)
                     WHERE vanguard_id = ?
-                """, (entry_data, work_model, career_url, career_method, career_status, career_status, career_error, v_id))
+                """,
+                    (
+                        entry_data,
+                        work_model,
+                        career_url,
+                        career_method,
+                        career_status,
+                        career_status,
+                        career_error,
+                        v_id,
+                    ),
+                )
             else:
-                conn.execute("""
+                conn.execute(
+                    """
                     INSERT INTO entries (
                         vanguard_id, provider_id, identity_manifest, entry_data, 
                         work_model, hit_count, 
@@ -103,6 +112,8 @@ class LeadsDAO(BaseDAO):
                         status
                     )
                     VALUES (?, ?, '["source_url", "entity_label"]', ?, ?, 1, ?, ?, ?, ?, 'active')
-                """, (v_id, provider_id, entry_data, work_model, career_url, career_method, career_status, career_error))
+                """,
+                    (v_id, provider_id, entry_data, work_model, career_url, career_method, career_status, career_error),
+                )
             conn.commit()
             return True

@@ -17,24 +17,25 @@ except ImportError:
     logging.warning("jobspy not found. JobSpyScout will run in mock mode.")
     scrape_jobs = None
 
+
 class JobSpyScout(BaseScout):  # type: ignore[misc]
     """
     JobSpyScout wraps the JobSpy library to act as a Vanguard Research Bridge.
     It implements prioritized location logic and relocation heuristics based on YAML config.
     """
-    
+
     def __init__(self, config_path: Optional[str | Path] = None) -> None:
         """
         Initialize with config file path. Defaults to config/scouts/jobspy.yaml.
         """
         super().__init__(scout_name="JobSpyScout", target_source="https://github.com/speedyapply/JobSpy")
-        
+
         # Load Configuration
         self.root_dir = Path(__file__).parent.parent
         resolved_config_path = config_path or self.root_dir / "config" / "scouts" / "jobspy.yaml"
-        with open(resolved_config_path, 'r') as f:
+        with open(resolved_config_path, "r") as f:
             self.settings = yaml.safe_load(f)
-            
+
         self.search_params = self.settings.get("search_parameters", {})
         self.loc_logic = self.settings.get("location_logic", {})
         self.relo_heuristics = self.settings.get("relocation_heuristics", {})
@@ -64,13 +65,13 @@ class JobSpyScout(BaseScout):  # type: ignore[misc]
         """Internal search runner for specific location context."""
         context_str = "Remote" if is_remote else f"Local ({location})"
         sites = self.search_params.get("sites", ["linkedin"])
-        
+
         self.logger.info(f"Starting {context_str} search pass for {len(sites)} sites...")
-        
+
         for site in sites:
             try:
                 self.logger.info(f"Querying {site}...")
-                
+
                 # Jitter: Random sleep before each site request to avoid bulk detection
                 time.sleep(random.uniform(3, 8))
 
@@ -82,9 +83,9 @@ class JobSpyScout(BaseScout):  # type: ignore[misc]
                     is_remote=is_remote,
                     results_wanted=self.search_params.get("results_wanted", 20),
                     hours_old=self.search_params.get("hours_old", 72),
-                    country_indeed='USA'
+                    country_indeed="USA",
                 )
-                
+
                 if jobs is not None and not jobs.empty:
                     count = len(jobs)
                     self.logger.info(f"Found {count} jobs on {site}.")
@@ -101,42 +102,38 @@ class JobSpyScout(BaseScout):  # type: ignore[misc]
     def _process_and_report(self, job_data: dict[str, Any]) -> None:
         """Refines data and applies relocation heuristics before reporting."""
         entity_label = job_data.get("title", "Unknown Title")
-        
+
         # 1. Determine Work Model
         work_model = self._determine_work_model(job_data)
-        
+
         # 2. Apply Relocation Heuristic
         relo_prob = self._calculate_relo_probability(job_data, work_model)
         job_data["vanguard_relo_probability"] = relo_prob
-        
+
         # Cleanup data for storage
         for key, value in job_data.items():
-            if hasattr(value, 'isoformat'):
+            if hasattr(value, "isoformat"):
                 job_data[key] = value.isoformat()
             elif isinstance(value, float) and (value != value):
                 job_data[key] = None
 
         # 3. Report using BaseScout interface
-        self.report_entity(
-            entity_label=entity_label,
-            raw_data=job_data,
-            work_model=work_model
-        )
+        self.report_entity(entity_label=entity_label, raw_data=job_data, work_model=work_model)
 
     def _determine_work_model(self, job_data: dict[str, Any]) -> str:
         """Heuristic to determine work modality from JobSpy fields."""
         location = str(job_data.get("location") or "").lower()
         description = str(job_data.get("description") or "").lower()
-        
+
         if job_data.get("is_remote") or "remote" in location:
             return "remote"
-        
+
         if "hybrid" in location or "hybrid" in description:
             return "hybrid"
-            
+
         if location:
             return "onsite"
-            
+
         return "unknown"
 
     def _calculate_relo_probability(self, job_data: dict[str, Any], work_model: str) -> float:
@@ -147,7 +144,7 @@ class JobSpyScout(BaseScout):  # type: ignore[misc]
         # 1. Exclusion Guards
         if work_model == "remote":
             return 0.0
-            
+
         # Don't need relocation if the job is already in our home location
         job_loc = str(job_data.get("location") or "").lower()
         if self.user_home and job_loc:
@@ -160,21 +157,21 @@ class JobSpyScout(BaseScout):  # type: ignore[misc]
 
         score = 0.0
         desc = str(job_data.get("description") or "").lower()
-        
+
         # 2. Keyword Vector
         keywords = self.relo_heuristics.get("keywords", [])
         for kw in keywords:
             if kw.lower() in desc:
-                score += 0.5 # Increased weight for explicit mention
+                score += 0.5  # Increased weight for explicit mention
                 break
-        
+
         # 3. Salary Vector
         min_sal = job_data.get("min_amount", 0) or 0
         threshold = self.relo_heuristics.get("min_salary_threshold", 110000)
         if min_sal >= threshold:
             score += 0.3
-            
+
         # 4. Company Size Heuristic (if available)
         # Larger companies are more likely to have relo budgets
-        
+
         return min(score, 1.0)

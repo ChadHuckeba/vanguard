@@ -2,20 +2,24 @@ from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 
+
 class SourceInfo(BaseModel):
     scout: str = Field(..., description="The name of the scout that discovered the lead")
     source_url: str = Field(..., description="The original URL of the job lead")
+
 
 class Metadata(BaseModel):
     first_seen: datetime = Field(default_factory=datetime.utcnow)
     last_seen: datetime = Field(default_factory=datetime.utcnow)
     hit_count: int = 1
 
+
 class CareerInfo(BaseModel):
     url: Optional[str] = None
     method: Optional[str] = None
     status: str = "pending"
     error: Optional[str] = None
+
 
 class LeadContent(BaseModel):
     id: Optional[str] = None
@@ -44,6 +48,7 @@ class LeadContent(BaseModel):
         if "unknown company" in v.lower():
             raise ValueError("Company cannot be 'Unknown Company'")
         return v
+
 
 class Lead(BaseModel):
     vanguard_id: str

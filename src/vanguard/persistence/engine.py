@@ -4,6 +4,7 @@ from pathlib import Path
 
 logger = logging.getLogger("vanguard.persistence.engine")
 
+
 class SQLiteEngine:
     """
     Manages the SQLite database connection and configuration.

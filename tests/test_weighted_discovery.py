@@ -13,12 +13,16 @@ import pytest
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
 
-@pytest.mark.parametrize("company_name, job_title", [
-    ("Veeva Systems", "Operations Manager"),
-    ("OpenAI", "Software Engineer"),
-    ("Anthropic", "Product Manager"),
-    ("Cloudflare", "Systems Engineer")
-])
+
+@pytest.mark.parametrize(
+    "company_name, job_title",
+    [
+        ("Veeva Systems", "Operations Manager"),
+        ("OpenAI", "Software Engineer"),
+        ("Anthropic", "Product Manager"),
+        ("Cloudflare", "Systems Engineer"),
+    ],
+)
 def test_discovery(company_name: str, job_title: str) -> None:
     print(f"\n--- Testing Discovery for: {company_name} ---")
     strategy = HeuristicStrategy()
@@ -35,12 +39,13 @@ def test_discovery(company_name: str, job_title: str) -> None:
     else:
         print("FAILED to discover career page.")
 
+
 if __name__ == "__main__":
     test_cases = [
         ("Veeva Systems", "Operations Manager"),
         ("OpenAI", "Software Engineer"),
         ("Anthropic", "Product Manager"),
-        ("Cloudflare", "Systems Engineer")
+        ("Cloudflare", "Systems Engineer"),
     ]
     for name, title in test_cases:
         test_discovery(name, title)

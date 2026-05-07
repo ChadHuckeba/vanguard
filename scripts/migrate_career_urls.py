@@ -14,19 +14,15 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger("vanguard.migration")
 
 # Known aggregators that we should not crawl directly
-AGGREGATORS = [
-    r"glassdoor\.com",
-    r"linkedin\.com",
-    r"indeed\.com",
-    r"ziprecruiter\.com"
-]
+AGGREGATORS = [r"glassdoor\.com", r"linkedin\.com", r"indeed\.com", r"ziprecruiter\.com"]
+
 
 def backfill_career_urls():
     """
     Iterates through entries and attempts to extract career URLs using a Company-First approach.
     """
     orchestrator = DiscoveryOrchestrator(core_engine.companies)
-    
+
     # Query all entries using the new modular engine
     leads_list = core_engine.leads.list_leads()
 
@@ -39,7 +35,7 @@ def backfill_career_urls():
     for lead in leads_list:
         v_id = lead.vanguard_id
         company_name = lead.content.company
-        
+
         # Determine if we should attempt domain resolution
         target_site = lead.content.company_url or lead.source_info.source_url
         is_aggregator = False
@@ -50,7 +46,7 @@ def backfill_career_urls():
                     break
 
         career_page = None
-        
+
         # 1. Domain & Career Resolution via Orchestrator
         if not target_site or is_aggregator:
             if company_name:
@@ -71,7 +67,7 @@ def backfill_career_urls():
         # 2. Deep Link Discovery (Job Specific)
         job_title = lead.content.title
         final_url = career_page
-        
+
         if career_page and job_title:
             deep_link = orchestrator.find_deep_link(career_page, job_title)
             if deep_link:
@@ -83,7 +79,7 @@ def backfill_career_urls():
             lead.career_info.url = final_url
             lead.career_info.status = "verified" if final_url != career_page else "ambiguous"
             lead.career_info.method = "orchestrator"
-            
+
             core_engine.leads.upsert_lead(lead)
             logger.info(f"Processed {v_id[:8]} ({company_name}): -> {final_url}")
         else:
@@ -91,9 +87,10 @@ def backfill_career_urls():
             lead.career_info.url = None
             lead.career_info.status = "failed"
             lead.career_info.error = f"Could not locate official career page for {company_name or 'Unknown Company'}"
-            
+
             core_engine.leads.upsert_lead(lead)
             logger.warning(f"Failed to locate career page for {v_id[:8]} ({company_name})")
+
 
 if __name__ == "__main__":
     backfill_career_urls()

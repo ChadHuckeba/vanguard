@@ -10,17 +10,19 @@ from vanguard.persistence.leads_dao import LeadsDAO
 from vanguard.persistence.companies_dao import CompaniesDAO
 from vanguard.persistence.migration_manager import MigrationManager
 
+
 class ScoutCore:
     """
     The central orchestration engine for the Vanguard platform.
-    
-    A domain-agnostic singleton that manages state persistence, 
+
+    A domain-agnostic singleton that manages state persistence,
     entity deduplication, and data integrity for all specialized scouts.
     """
+
     _instance = None
     _initialized = False
 
-    def __new__(cls, *args: Any, **kwargs: Any) -> 'ScoutCore':
+    def __new__(cls, *args: Any, **kwargs: Any) -> "ScoutCore":
         if cls._instance is None:
             cls._instance = super(ScoutCore, cls).__new__(cls)
         return cls._instance
@@ -40,28 +42,26 @@ class ScoutCore:
         self.db_path = self.data_dir / "vanguard.db"
         self.log_path = self.root_dir / "logs" / "system.log"
         self.migrations_dir = self.root_dir / "src" / "vanguard" / "persistence" / "migrations"
-        
+
         # Add src to path for relative imports
         src_path = str(self.root_dir / "src")
         if src_path not in sys.path:
             sys.path.append(src_path)
-        
+
         self.data_dir.mkdir(exist_ok=True)
         (self.root_dir / "logs").mkdir(exist_ok=True)
-        
+
         logging.basicConfig(
-            filename=self.log_path, 
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s'
+            filename=self.log_path, level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
         )
-        
+
         # Initialize Persistence Engine
         self.engine = SQLiteEngine(self.db_path)
-        
+
         # Apply Migrations
         self.migration_manager = MigrationManager(self.engine, self.migrations_dir)
         self.migration_manager.apply_all()
-        
+
         # Initialize DAOs
         self.leads = LeadsDAO(self.engine)
         self.companies = CompaniesDAO(self.engine)
@@ -94,12 +94,13 @@ class ScoutCore:
                 lead = record_data
             else:
                 lead = Lead(**record_data)
-            
+
             # 2. Handoff to persistence (using validated model)
             self.leads.upsert_lead(lead)
-            
+
         except Exception as e:
             logging.error(f"Ingestion failed for lead: {str(e)}")
             raise ValueError(f"Payload validation failed: {str(e)}")
+
 
 core_engine = ScoutCore()
