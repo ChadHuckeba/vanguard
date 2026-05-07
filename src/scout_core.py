@@ -1,9 +1,7 @@
-import os
-import json
+from typing import Any, Dict, Union
 import hashlib
 import logging
 import sys
-from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 from vanguard.models.lead import Lead
@@ -22,17 +20,17 @@ class ScoutCore:
     _instance = None
     _initialized = False
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args: Any, **kwargs: Any) -> 'ScoutCore':
         if cls._instance is None:
             cls._instance = super(ScoutCore, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         if not self._initialized:
             self._initialize_core()
             self.__class__._initialized = True
 
-    def _initialize_core(self):
+    def _initialize_core(self) -> None:
         """
         Initialize the system environment and load the persistent state.
         Ensures the local infrastructure exists for agnostic data storage.
@@ -85,7 +83,7 @@ class ScoutCore:
         input_string = f"{sanitized_url}{entity_label}".strip().lower()
         return hashlib.sha256(input_string.encode()).hexdigest()
 
-    def upsert_record(self, record_data: dict):
+    def upsert_record(self, record_data: Union[Dict[str, Any], Lead]) -> None:
         """
         Ingest an entity record or update an existing entry.
         Validated against the Pydantic Lead model at the boundary.

@@ -2,7 +2,6 @@ import logging
 import sys
 import os
 import re
-from pathlib import Path
 
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))

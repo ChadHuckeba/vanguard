@@ -1,6 +1,5 @@
 import logging
-from typing import Optional, List
-from vanguard.models.discovery import DiscoveryResult
+from typing import Optional
 from vanguard.persistence.companies_dao import CompaniesDAO
 from vanguard.models.company import Company
 from .strategies.heuristics import HeuristicStrategy
