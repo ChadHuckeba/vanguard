@@ -1,6 +1,7 @@
 from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
+from .discovery import is_blocked_url
 
 
 class SourceInfo(BaseModel):
@@ -19,6 +20,13 @@ class CareerInfo(BaseModel):
     method: Optional[str] = None
     status: str = "pending"
     error: Optional[str] = None
+
+    @field_validator("url")
+    @classmethod
+    def check_not_blocked(cls, v: Optional[str]) -> Optional[str]:
+        if v and is_blocked_url(v):
+            raise ValueError(f"Career URL matches a blocked aggregator: {v}")
+        return v
 
 
 class LeadContent(BaseModel):

@@ -5,7 +5,7 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 from curl_cffi import requests
 from ddgs import DDGS
-from vanguard.models.discovery import DiscoveryResult
+from vanguard.models.discovery import DiscoveryResult, is_blocked_url
 from ..base_strategy import BaseDiscoveryStrategy
 
 logger = logging.getLogger("vanguard.discovery.heuristics")
@@ -47,17 +47,6 @@ class HeuristicStrategy(BaseDiscoveryStrategy):
         "mission",
     ]
 
-    # Blocklist to prevent resolving company names to job aggregators/boards
-    GLOBAL_AGGREGATOR_BLOCKLIST = [
-        "jooble.org",
-        "lensa.com",
-        "swooped.co",
-        "monster.com",
-        "dice.com",
-        "salary.com",
-        "levels.fyi",
-    ]
-
     def __init__(self) -> None:
         self.ddgs = DDGS()
         self.headers = {
@@ -82,8 +71,8 @@ class HeuristicStrategy(BaseDiscoveryStrategy):
                 domain_parts = urlparse(url).netloc.lower().split(".")
                 domain = ".".join(domain_parts[-2:]) if len(domain_parts) >= 2 else domain_parts[0]
 
-                # Check Blocklist
-                if any(block in url.lower() for block in self.GLOBAL_AGGREGATOR_BLOCKLIST):
+                # Check Centralized Blocklist
+                if is_blocked_url(url):
                     logger.warning(f"Skipping blocked aggregator domain: {domain}")
                     continue
 
@@ -159,9 +148,8 @@ class HeuristicStrategy(BaseDiscoveryStrategy):
             for link in links:
                 text = link.get_text(strip=True).lower()
                 if clean_title in re.sub(r"[^a-z0-9]", "", text):
-                    href = link.get("href")
-                    if href:
-                        return urljoin(portal_url, str(href))
+                    href = link["href"]
+                    return urljoin(portal_url, str(href))
             return None
         except Exception:
             return None
