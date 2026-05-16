@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Add to Project Board
-        uses: actions/add-to-project@v1
+        uses: actions/add-to-project@v2
         with:
           # This URL is explicitly injected during repository provisioning
           project-url: "https://github.com/users/ChadHuckeba/projects/2"
